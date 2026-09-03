@@ -6,6 +6,15 @@ changes, the line is edited, not appended to.
 Scope: decisions that do **not** become domain rules - stack choices, working setup, what was
 left out. Anything that becomes a rule lives only in `01-domain.md`; do not restate it here.
 
+## 2026-09-03 - Two DbContexts, one transaction: a shared connection, not a distributed transaction
+Order creation writes `Order` and `StockItem` in one transaction (rule 46), but each module owns
+its own `DbContext`. The two contexts are built on the **same open `DbConnection`** for the
+lifetime of the request; the transaction is begun once on that connection and each context is
+enlisted with `Database.UseTransaction(...)`. One connection means one SQL Server transaction -
+no `TransactionScope`, no MSDTC, no second commit that can fail on its own. The price: the
+connection is a scoped, shared object, so a handler that opens work on a background thread would
+be sharing a connection that cannot be used concurrently. Wired up in work item 03.
+
 ## 2026-09-02 - Orders come in two ways: webhook carries, polling guarantees (D6)
 A lost webhook has no signal - it looks like "no errors" - so polling is never switched off; it
 becomes a long-interval safety net whose window is deliberately wider than needed, sweeping the

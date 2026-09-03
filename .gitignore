@@ -1,10 +1,32 @@
-bin/
-obj/
-.vs/
-.idea/
+## .NET build output
+[Bb]in/
+[Oo]bj/
+artifacts/
 *.user
-node_modules/
-.next/
+*.suo
+[Tt]est[Rr]esults/
+*.trx
+*.nupkg
+
+## IDE
+.vs/
+.vscode/
+.idea/
+*.DotSettings.user
+
+## Secrets and local configuration
 .env
 .env.local
 appsettings.Development.json
+appsettings.*.local.json
+
+## Node / Next.js (web/)
+node_modules/
+.next/
+out/
+npm-debug.log*
+
+## OS and logs
+Thumbs.db
+.DS_Store
+*.log

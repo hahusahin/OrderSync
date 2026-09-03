@@ -13,7 +13,7 @@ Progress is measured in work items, not hours.
 - [x] D8 Reconciliation: why drift happens, how it is found, how it is fixed
 
 ## Phase 0 — skeleton
-- [ ] 01 Solution structure and modular monolith skeleton — vertical slice layout, `Shared.Kernel` /
+- [x] 01 Solution structure and modular monolith skeleton — vertical slice layout, `Shared.Kernel` /
       `Shared.Infrastructure` / `Shared.Contracts`, per-module `.Contracts` project, `Data/` per
       module (Claude)
 - [ ] 02 Docker Compose: SQL Server, Redis, RabbitMQ, MinIO, Seq (Claude)

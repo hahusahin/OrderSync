@@ -34,7 +34,17 @@
   the vertical-slice/Clean trade-off and the price paid (no compiler-enforced boundary), why
   DDD is selective, why `Domain/` is not sliced. One correction was needed - the invariant had
   been stated backwards ("reserved cannot be *lower* than on-hand"); it is `reserved <= on-hand`.
-- **Next: work item 01** — solution structure and modular monolith skeleton.
+- **01 done (2026-09-03).** Solution skeleton: 10 projects, 4 modules each with its own
+  `.Contracts`, `Shared.Kernel` / `Shared.Infrastructure` / `Shared.Contracts`, and
+  `OrderSync.Api` as the only composition root. Modules are registered through `IModule` and
+  endpoints discovered through `IEndpoint` per module assembly. `dotnet build` clean, all four
+  `/api/<module>/ping` placeholders answer. The open transaction question is decided (see
+  `decisions.md`) and wired at 03. Review passed with one correction: the `.Contracts` boundary
+  had been justified by "it makes a later microservice split easy", a reason this project does
+  not have (the split is out of scope). It exists so that the aggregate's invariant cannot be
+  reached from outside its own module - with a direct reference `stockItem.Reserved += n` would
+  compile and skip `Reserve()`.
+- **Next: work item 02** — Docker Compose: SQL Server, Redis, RabbitMQ, MinIO, Seq.
 
 ## Open debts
 
@@ -44,9 +54,9 @@
    marketplace make things worse? (D6 taught the outbound half.) — asked at work item 22.
 5. Does this monolith scale horizontally? Which single piece does not? Why is the stock row lock
    not a global bottleneck? — asked at work item 10.
-**Open question inside work item 01:** order creation writes `Order` and `StockItem` in one
-transaction (rule 46), but they sit in two modules with a `DbContext` each. How the two contexts
-share one transaction is decided when the skeleton is written, not before.
+6. Why does `Ordering` referencing `Inventory.Contracts` — and never `Inventory` — matter, when
+   both end up in the same process anyway? What breaks the day someone references the module
+   project directly? — asked at work item 12.
 
 ## Work items
-8 / 46 (D1-D8)
+9 / 46 (D1-D8, 01)
