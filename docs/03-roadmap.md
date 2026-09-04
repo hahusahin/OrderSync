@@ -16,7 +16,7 @@ Progress is measured in work items, not hours.
 - [x] 01 Solution structure and modular monolith skeleton — vertical slice layout, `Shared.Kernel` /
       `Shared.Infrastructure` / `Shared.Contracts`, per-module `.Contracts` project, `Data/` per
       module (Claude)
-- [ ] 02 Docker Compose: SQL Server, Redis, RabbitMQ, MinIO, Seq (Claude)
+- [x] 02 Docker Compose: SQL Server, Redis, RabbitMQ, MinIO, Seq (Claude)
 - [ ] 03 EF Core setup and first migration (Claude)
 - [ ] 04 Serilog + Seq, global exception handling (Claude)
 - [ ] 05 Swagger/Scalar + health checks (Claude)

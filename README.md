@@ -12,3 +12,18 @@ pushes every stock change back to all channels.
 > The system also connects to at least one real external service (TCMB exchange rates).
 
 Status: **planning / domain phase.** See `docs/`.
+
+## Local setup
+
+Requires Docker Desktop and the .NET 10 SDK.
+
+```bash
+docker compose up -d      # SQL Server, Redis, RabbitMQ, MinIO, Seq
+docker compose ps         # wait until all five report (healthy)
+dotnet run --project src/OrderSync.Api
+```
+
+The API is not containerised yet - it runs from the SDK or the IDE and connects to the ports
+above. Credentials and the service URLs are listed in `docs/dev-notes.md`; passwords default
+to development values baked into `docker-compose.yml` and can be overridden with a `.env` file
+(see `.env.example`).

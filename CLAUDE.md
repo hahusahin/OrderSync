@@ -76,7 +76,7 @@ unfamiliar topics, but depth means narrowing the subject, not adding lines.
 - **Docs Claude maintains and reads often: English** — this file, `docs/00-status.md`,
   `docs/02-stack.md`, `docs/03-roadmap.md`, `docs/decisions.md`.
 - **Docs written for Huseyin to learn from: Turkish** — `docs/01-domain.md`,
-  `docs/fikirler.md`, `docs/rider-notlari.md`.
+  `docs/fikirler.md`, `docs/dev-notes.md`.
 
 ## Rules
 

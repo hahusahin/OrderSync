@@ -1,0 +1,105 @@
+name: ordersync
+
+# Local development infrastructure. The API is not here yet - it runs from the IDE and
+# connects to these ports. Defaults are inline so a fresh clone comes up with one command;
+# override them in a .env file next to this one (see .env.example).
+
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: ordersync-sqlserver
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:-Local_Dev_P4ssw0rd!}
+      MSSQL_PID: Developer
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver-data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -C -Q 'SELECT 1'"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: ordersync-redis
+    ports:
+      - "6379:6379"
+    # No volume: Redis holds cache only, every key is reproducible from SQL Server.
+    # Persisting it would invite code that assumes a key survives a restart.
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  rabbitmq:
+    image: rabbitmq:4-management-alpine
+    container_name: ordersync-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-ordersync}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-Local_Dev_P4ssw0rd!}
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "check_running"]
+      interval: 15s
+      timeout: 10s
+      retries: 8
+      start_period: 30s
+    restart: unless-stopped
+
+  minio:
+    image: minio/minio:latest
+    container_name: ordersync-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-ordersync}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-Local_Dev_P4ssw0rd!}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 10s
+    restart: unless-stopped
+
+  seq:
+    image: datalust/seq:latest
+    container_name: ordersync-seq
+    environment:
+      ACCEPT_EULA: "Y"
+      # Seq refuses to start without an explicit choice here. This is a local log sink
+      # reachable only from this machine, so it runs open rather than behind a password.
+      SEQ_FIRSTRUN_NOAUTHENTICATION: "True"
+    ports:
+      - "5341:5341"
+      - "8081:80"
+    volumes:
+      - seq-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 15s
+    restart: unless-stopped
+
+volumes:
+  sqlserver-data:
+  rabbitmq-data:
+  minio-data:
+  seq-data:

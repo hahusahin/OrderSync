@@ -1,6 +1,6 @@
 # Status
 
-**Last updated:** 2026-09-03
+**Last updated:** 2026-09-04
 
 ## Where we are
 
@@ -44,7 +44,17 @@
   not have (the split is out of scope). It exists so that the aggregate's invariant cannot be
   reached from outside its own module - with a direct reference `stockItem.Reserved += n` would
   compile and skip `Reserve()`.
-- **Next: work item 02** — Docker Compose: SQL Server, Redis, RabbitMQ, MinIO, Seq.
+- **02 done (2026-09-04).** `docker-compose.yml` at the repo root: SQL Server 2022 Developer,
+  Redis, RabbitMQ (+ management UI), MinIO, Seq. Passwords are inline defaults overridable by a
+  `.env` (`.env.example` committed), every service has a real `healthcheck` so 03 can wait on
+  `service_healthy`, and Redis deliberately has no volume. Verified from the Windows host, not
+  only inside the containers: `sa` login returns `@@VERSION`, Redis answers `+PONG`, the RabbitMQ
+  management API accepts the credentials, MinIO `/minio/health/live` is `200`, a CLEF event posted
+  to Seq returns `201`. Seq needed `SEQ_FIRSTRUN_NOAUTHENTICATION` - without it the container
+  crash-loops. The API is not containerised yet; it runs from Rider against these ports
+  (Dockerfile deferred to work item 41). `docs/rider-notlari.md` renamed to `docs/dev-notes.md`
+  and given a Docker section.
+- **Next: work item 03** — EF Core setup and first migration.
 
 ## Open debts
 
@@ -59,4 +69,4 @@
    project directly? — asked at work item 12.
 
 ## Work items
-9 / 46 (D1-D8, 01)
+10 / 46 (D1-D8, 01-02)

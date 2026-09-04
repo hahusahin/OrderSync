@@ -6,6 +6,16 @@ changes, the line is edited, not appended to.
 Scope: decisions that do **not** become domain rules - stack choices, working setup, what was
 left out. Anything that becomes a rule lives only in `01-domain.md`; do not restate it here.
 
+## 2026-09-04 - Local infrastructure: one compose file, defaults inline, no volume for Redis
+Five services in `docker-compose.yml`; the API is not among them yet - it runs from Rider and
+connects to the published ports, so the debugger stays out of a container through work items
+03-13. A Dockerfile arrives at work item 41. Passwords are inline defaults
+(`${MSSQL_SA_PASSWORD:-...}`) overridable by a `.env`, because a fresh clone has to come up with
+one command and a required `.env` would break that. Redis gets no volume: it holds cache only,
+and persisting it invites code that assumes a key survived a restart. Every service carries a
+`healthcheck` that proves the service answers, not that the process started - 03 depends on the
+difference, since SQL Server accepts no connection for its first ~30 seconds.
+
 ## 2026-09-03 - Two DbContexts, one transaction: a shared connection, not a distributed transaction
 Order creation writes `Order` and `StockItem` in one transaction (rule 46), but each module owns
 its own `DbContext`. The two contexts are built on the **same open `DbConnection`** for the
