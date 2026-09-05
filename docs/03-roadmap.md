@@ -17,7 +17,7 @@ Progress is measured in work items, not hours.
       `Shared.Infrastructure` / `Shared.Contracts`, per-module `.Contracts` project, `Data/` per
       module (Claude)
 - [x] 02 Docker Compose: SQL Server, Redis, RabbitMQ, MinIO, Seq (Claude)
-- [ ] 03 EF Core setup and first migration (Claude)
+- [x] 03 EF Core setup and first migration (Claude)
 - [ ] 04 Serilog + Seq, global exception handling (Claude)
 - [ ] 05 Swagger/Scalar + health checks (Claude)
 

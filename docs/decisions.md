@@ -6,6 +6,19 @@ changes, the line is edited, not appended to.
 Scope: decisions that do **not** become domain rules - stack choices, working setup, what was
 left out. Anything that becomes a rule lives only in `01-domain.md`; do not restate it here.
 
+## 2026-09-04 - One database, a schema and a migration history per module
+Every module keeps its own `DbContext` in its own SQL Server schema (`inventory`, `ordering`,
+`integration`) with its own `__EFMigrationsHistory` in that schema, so modules migrate
+independently and the module boundary is visible in the database, not only in the solution.
+Identity's context arrives with its own tables at work item 14. In Development the API creates
+the database and applies pending migrations at startup - one `docker compose up -d --wait` plus
+Run is a working system; nowhere else does the process that serves traffic migrate. The database
+is created by hand rather than by EF: the contexts are handed a connection object bound to a
+database that does not exist yet, and the failed open costs that object its credentials before
+EF can retry through master. `InvariantGlobalization` had to be turned off - `Microsoft.Data.SqlClient`
+refuses to open any connection in that mode. `appsettings.Development.json` is committed (local
+container defaults only), because a required local file would break the one-command start.
+
 ## 2026-09-04 - Local infrastructure: one compose file, defaults inline, no volume for Redis
 Five services in `docker-compose.yml`; the API is not among them yet - it runs from Rider and
 connects to the published ports, so the debugger stays out of a container through work items

@@ -15,9 +15,10 @@ artifacts/
 *.DotSettings.user
 
 ## Secrets and local configuration
+# appsettings.Development.json is committed on purpose: it holds only the local container
+# defaults, and without it a fresh clone cannot start. Personal overrides go in a .local file.
 .env
 .env.local
-appsettings.Development.json
 appsettings.*.local.json
 
 ## Node / Next.js (web/)

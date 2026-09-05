@@ -54,9 +54,33 @@
   crash-loops. The API is not containerised yet; it runs from Rider against these ports
   (Dockerfile deferred to work item 41). `docs/rider-notlari.md` renamed to `docs/dev-notes.md`
   and given a Docker section.
-- **Next: work item 03** — EF Core setup and first migration.
+- **03 done (2026-09-04).** EF Core wired: a `DbContext` per module, each in its own schema
+  (`inventory`, `ordering`, `integration`) with its own `__EFMigrationsHistory`; Identity's
+  context waits for work item 14. `Shared.Infrastructure/Data/` holds the pieces that make the
+  cross-module transaction possible: `DbConnectionAccessor` (one `SqlConnection` per request,
+  every context built on it) and `IUnitOfWork` (begins the transaction once, enlists every context with
+  `UseTransaction`, saves and commits together) - written not to wrap EF but to supply the one
+  thing EF has no answer for, since `SaveChanges` commits a single context. The three `Initial`
+  migrations are deliberately empty: they create the schema and the history table, and the
+  tables arrive with work items 06-11. In Development a hosted `DatabaseMigrator` creates the
+  database and applies pending migrations at startup. Verified from an empty server: database
+  and three schemas created, three history rows written, all four `ping` endpoints answering.
+  Two things bit on the way - `InvariantGlobalization` (inherited from 01) makes
+  `Microsoft.Data.SqlClient` refuse every connection, and EF cannot create a missing database
+  when it is handed a connection *object*, so the migrator creates it through master first.
+  `appsettings.Development.json` was in `.gitignore`; it is now committed, since without it a
+  fresh clone has no connection string. Review removed a `DatabaseSettings` class that wrapped a
+  single string - the connection string is now read once in `AddSharedPersistence`. The review
+  also produced a standing instruction, see Open debts.
+- **Next: work item 04** — Serilog + Seq, global exception handling.
 
 ## Open debts
+
+**Less scaffolding (2026-09-05).** His feedback at 03: the volume of infrastructure code makes it
+harder, not safer, to learn from - every hole closed with another file is attention taken away from
+the thing being taught. From 04 on: the fewest files that make the item work, holes named in prose
+instead of closed with code, and review questions about the mechanism rather than a rule to
+memorise. He also said this stretch is costing him more effort than the eShop course did.
 
 **Owed re-explanations** (asked once the code exists, out of that work item's own code):
 
@@ -69,4 +93,4 @@
    project directly? — asked at work item 12.
 
 ## Work items
-10 / 46 (D1-D8, 01-02)
+11 / 46 (D1-D8, 01-03)

@@ -22,6 +22,31 @@ mesajda yolunu ver.
 
 ## Öğrendiklerim
 
+**Soru: İki farklı modülün aynı transaction içinde veritabanına yazması nasıl sağlanır?**
+Sipariş oluşturmada `Ordering` siparişi, `Inventory` rezervasyonu yazar. İkisi ayrı modül, ayrı
+`DbContext`. Yarısının yazılıp yarısının yazılmaması kabul edilemez.
+
+Cevap: transaction bağlantıya aittir, o yüzden **request başına tek bir bağlantı** açılır
+(`DbConnectionAccessor`, scoped) ve o request'e hizmet eden bütün `DbContext`'ler bu tek
+bağlantının üstüne kurulur. Transaction bu bağlantıda bir kez açılır, her context
+`Database.UseTransaction` ile ona bağlanır, sonunda hepsi tek `Commit` ile yazılır
+(`UnitOfWork`). Tek bağlantı = tek transaction; dağıtık transaction (MSDTC) gerekmez.
+
+Bedeli: tek hat üzerinde aynı anda iki sorgu çalışamaz — bir handler'da iki veritabanı
+sorgusunu `Task.WhenAll` ile birlikte başlatamazsın.
+
+**Soru: `DbContext` zaten unit of work değil mi, niye ayrıca `UnitOfWork` yazdık?**
+`DbContext` **bir** context'in unit of work'üdür; `SaveChanges` onun değişikliklerini tek
+transaction'da yazar. İki context'i birlikte commit eden bir şey EF'te yok — yazdığımız sınıf
+o boşluğu doldurur. `DbSet`'i sarmalayan `IRepository<T>` yazmıyoruz; handler'lar `DbSet`'e
+doğrudan dokunur.
+
+**Soru: Bir modülün migration'ları diğerininkine neden karışmıyor?**
+İki ayrı mekanizma: `MigrationsAssembly` migration dosyalarının hangi projeye yazılacağını,
+`MigrationsHistoryTable` de "hangileri uygulandı" kaydının hangi şemada tutulacağını belirler.
+Her modül kendi şemasında kendi `__EFMigrationsHistory` tablosunu tutar; böylece bir modülü
+tek başına geri almak (`database update <önceki>`) mümkün olur.
+
 **`.csproj` açmak.** Solution görünümünde ayrı dosya olarak listelenmez; proje düğümünün kendisi
 o dosyadır. Sağ tık → Edit → `Edit 'X.csproj'`, ya da `Ctrl+Shift+T` ile adını yaz.
 `Directory.Build.props` gibi projeye ait olmayan dosyalar için de `Ctrl+Shift+T`.
@@ -92,3 +117,66 @@ Görev Yöneticisi → Ayrıntılar'da kimliğini gör.
 **SQL Server container'ı sürekli yeniden başlıyor** — `docker compose logs sqlserver`.
 En sık sebebi parolanın SQL Server'ın karmaşıklık kuralına uymaması (8+ karakter, büyük/küçük
 harf, rakam, sembol). Konteyner sessizce ölür, log söyler.
+
+## EF Core ve migration
+
+Her modülün kendi `DbContext`'i, kendi **şeması** ve kendi migration geçmişi var:
+
+| Modül | Şema | Context |
+|---|---|---|
+| Inventory | `inventory` | `InventoryDbContext` |
+| Ordering | `ordering` | `OrderingDbContext` |
+| Integration | `integration` | `IntegrationDbContext` |
+
+Identity'nin context'i henüz yok; task 14'te ASP.NET Identity tablolarıyla birlikte gelecek.
+
+Bağlantı bilgisi tek yerde: `src/OrderSync.Api/appsettings.Development.json` →
+`ConnectionStrings:OrderSyncDb`. Kodda hiçbir yerde connection string yazmıyor. Başka bir
+makinede/ortamda `ConnectionStrings__OrderSyncDb` environment değişkeni bu satırı ezer.
+Kendine özel bir ayar denemek istersen `appsettings.Development.local.json` aç — o gitignore'da.
+
+**Development'ta migration'lar uygulamanın kendisi tarafından uygulanır.** API ayağa kalkarken
+veritabanı yoksa oluşturur, sonra üç context'in bekleyen migration'larını çalıştırır ve
+`InventoryDbContext is up to date.` satırlarını loglar. Yani `docker compose up -d --wait` +
+Rider'da Run = çalışan sistem. Bu davranış sadece Development'ta açık.
+
+### Yeni migration eklemek
+
+Modül başına ayrı komut — `--project` migration'ın yazılacağı modül, `--startup-project` her
+zaman API (konfigürasyonu ve DI'ı o kuruyor):
+
+```
+dotnet ef migrations add <Ad> --project src/Modules/Inventory/Inventory --startup-project src/OrderSync.Api --context InventoryDbContext --output-dir Data/Migrations
+```
+
+| İş | Komut |
+|---|---|
+| Son migration'ı geri al (henüz uygulanmadıysa) | `dotnet ef migrations remove --project ... --startup-project src/OrderSync.Api --context ...` |
+| Elle uygula | `dotnet ef database update --project ... --startup-project src/OrderSync.Api --context ...` |
+| Uygulanmışları listele | `dotnet ef migrations list --project ... --startup-project src/OrderSync.Api --context ...` |
+
+Migration adı İngilizce ve ne yaptığını söyler: `AddStockItem`, `AddOrderLineStatus`.
+
+### Sıfırdan başlamak
+
+Veritabanını tamamen atmak için (`docker compose down -v` gerekmez):
+
+```
+docker exec ordersync-sqlserver /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'Local_Dev_P4ssw0rd!' -C -Q "ALTER DATABASE OrderSync SET SINGLE_USER WITH ROLLBACK IMMEDIATE; DROP DATABASE OrderSync;"
+```
+
+Sonraki çalıştırmada uygulama veritabanını ve şemaları yeniden kurar.
+
+### Takıldığında
+
+**`Globalization Invariant Mode is not supported`** — `Directory.Build.props` içindeki
+`InvariantGlobalization` açılmış demektir. `Microsoft.Data.SqlClient` o modda hiçbir bağlantı
+açamaz; `false` kalmalı.
+
+**`No instantiatable types implementing IEntityTypeConfiguration were found`** — uyarı, hata
+değil. Modülde henüz tablo yok. İlk entity configuration yazıldığında (task 06) kendiliğinden
+susar.
+
+**`Login failed for user 'sa'`** — parola yanlışsa gelir, ama veritabanı yokken de gelebilir:
+uygulama bağlantı nesnesini `Database=OrderSync` ile kurar ve başarısız açılış o nesnenin
+parolasını düşürür. Uygulamayı başlatmak sorunu çözer — veritabanını o oluşturur.
