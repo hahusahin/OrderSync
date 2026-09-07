@@ -18,7 +18,7 @@ Progress is measured in work items, not hours.
       module (Claude)
 - [x] 02 Docker Compose: SQL Server, Redis, RabbitMQ, MinIO, Seq (Claude)
 - [x] 03 EF Core setup and first migration (Claude)
-- [ ] 04 Serilog + Seq, global exception handling (Claude)
+- [x] 04 Serilog + Seq, global exception handling (Claude)
 - [ ] 05 Swagger/Scalar + health checks (Claude)
 
 ## Phase 1 — core domain: inventory and orders

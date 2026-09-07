@@ -9,6 +9,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Serilog.AspNetCore" />
+    <PackageReference Include="Serilog.Sinks.Seq" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Shared.Infrastructure\Shared.Infrastructure.csproj" />
     <ProjectReference Include="..\Modules\Ordering\Ordering\Ordering.csproj" />
     <ProjectReference Include="..\Modules\Inventory\Inventory\Inventory.csproj" />

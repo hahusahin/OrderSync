@@ -35,21 +35,11 @@ bağlantının üstüne kurulur. Transaction bu bağlantıda bir kez açılır, 
 Bedeli: tek hat üzerinde aynı anda iki sorgu çalışamaz — bir handler'da iki veritabanı
 sorgusunu `Task.WhenAll` ile birlikte başlatamazsın.
 
-**Soru: `DbContext` zaten unit of work değil mi, niye ayrıca `UnitOfWork` yazdık?**
-`DbContext` **bir** context'in unit of work'üdür; `SaveChanges` onun değişikliklerini tek
-transaction'da yazar. İki context'i birlikte commit eden bir şey EF'te yok — yazdığımız sınıf
-o boşluğu doldurur. `DbSet`'i sarmalayan `IRepository<T>` yazmıyoruz; handler'lar `DbSet`'e
-doğrudan dokunur.
-
 **Soru: Bir modülün migration'ları diğerininkine neden karışmıyor?**
 İki ayrı mekanizma: `MigrationsAssembly` migration dosyalarının hangi projeye yazılacağını,
 `MigrationsHistoryTable` de "hangileri uygulandı" kaydının hangi şemada tutulacağını belirler.
 Her modül kendi şemasında kendi `__EFMigrationsHistory` tablosunu tutar; böylece bir modülü
 tek başına geri almak (`database update <önceki>`) mümkün olur.
-
-**`.csproj` açmak.** Solution görünümünde ayrı dosya olarak listelenmez; proje düğümünün kendisi
-o dosyadır. Sağ tık → Edit → `Edit 'X.csproj'`, ya da `Ctrl+Shift+T` ile adını yaz.
-`Directory.Build.props` gibi projeye ait olmayan dosyalar için de `Ctrl+Shift+T`.
 
 ## Docker — lokal altyapı
 
@@ -180,3 +170,49 @@ susar.
 **`Login failed for user 'sa'`** — parola yanlışsa gelir, ama veritabanı yokken de gelebilir:
 uygulama bağlantı nesnesini `Database=OrderSync` ile kurar ve başarısız açılış o nesnenin
 parolasını düşürür. Uygulamayı başlatmak sorunu çözer — veritabanını o oluşturur.
+
+## Loglama ve hata yönetimi
+
+Serilog `Program.cs`'te koda değil **konfigürasyona** bağlandı: seviyeler ve sink'ler
+`appsettings.json` içindeki `Serilog` bölümünde. Yeni bir sink eklemek ya da bir namespace'i
+susturmak için kod değişmez.
+
+| Nereye | Ne için |
+|---|---|
+| Console | çalışırken göz ucuyla bakmak |
+| Seq — http://localhost:8081 | aramak, filtrelemek |
+
+**Structured logging.** Log satırı düz metin değil, alanlara ayrılmış bir kayıt. Şablonu
+`"Unhandled exception on {Method} {Path}"` diye yazınca Seq'te `Path` ayrı bir alan olur ve
+`RequestPath like '/api/inventory%'` diye filtreleyebilirsin. String interpolation
+(`$"... {path}"`) kullanırsan bu alanlar kaybolur — şablon her zaman sabit kalmalı.
+
+**Seq'te işe yarayan filtreler**
+
+```
+@Level = 'Error'
+@TraceId = '9a57a47e41552dde09b1780dd30c3745'
+RequestPath like '/api/inventory%' and StatusCode >= 400
+Elapsed > 500
+```
+
+### Beklenmeyen hata yakalandığında ne oluyor
+
+`GlobalExceptionHandler` (`src/OrderSync.Api/`) `IExceptionHandler`'ı uygular; .NET 8'den beri
+kendi middleware'ini yazmaya gerek yok, `UseExceptionHandler()` yakaladığı exception'ı ona verir.
+İki iş yapar: exception'ı stack trace'iyle **loglar**, istemciye **`ProblemDetails`** döner
+(RFC 7807 — `type`/`title`/`status`, `application/problem+json`).
+
+Gövdeye `Detail` **bilerek konmuyor**: exception mesajı connection string, SQL ya da müşteri
+verisi taşıyabilir. İstemcinin aldığı tek ipucu `traceId`:
+
+```json
+{ "title": "An unexpected error occurred.", "status": 500,
+  "traceId": "00-9a57a47e41552dde09b1780dd30c3745-26a5299d4011e839-00" }
+```
+
+Ortadaki uzun parça trace id'dir; Seq'te `@TraceId` alanına birebir eşittir. Yani elinde sadece
+bu gövde varken hatanın tam hikâyesine tek aramayla ulaşırsın. Bir destek kaydında istenecek şey
+budur.
+
+

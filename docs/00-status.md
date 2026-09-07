@@ -1,6 +1,6 @@
 # Status
 
-**Last updated:** 2026-09-04
+**Last updated:** 2026-09-07
 
 ## Where we are
 
@@ -72,7 +72,19 @@
   fresh clone has no connection string. Review removed a `DatabaseSettings` class that wrapped a
   single string - the connection string is now read once in `AddSharedPersistence`. The review
   also produced a standing instruction, see Open debts.
-- **Next: work item 04** — Serilog + Seq, global exception handling.
+- **04 done (2026-09-07).** Serilog + Seq and global exception handling. One new file
+  (`OrderSync.Api/GlobalExceptionHandler.cs`, an `IExceptionHandler`); everything else is
+  configuration. Serilog is configured from `appsettings.json` (`ReadFrom.Configuration`), so a
+  sink or a silenced namespace is an edit to JSON, not to code; the built-in `Logging` section was
+  removed so one job has one tool. The handler logs the exception with its stack trace and returns
+  `ProblemDetails` with **no `Detail`** - the caller's only clue is `traceId`, which equals Seq's
+  `@TraceId`, so a support ticket carrying the response body finds the full story in one search.
+  Middleware order matters and is commented in `Program.cs`: `UseSerilogRequestLogging()` before
+  `UseExceptionHandler()`, otherwise the exception escapes to the request logger and is written in
+  full twice. Verified end to end against a temporary `/dev/boom` endpoint (since removed):
+  `500` + `application/problem+json`, and both events in Seq under the same trace id. Deliberately
+  not written: bootstrap logger, `Result`->HTTP mapping (task 12), PII masking.
+- **Next: work item 05** — Swagger/Scalar + health checks.
 
 ## Open debts
 
@@ -93,4 +105,4 @@ memorise. He also said this stretch is costing him more effort than the eShop co
    project directly? — asked at work item 12.
 
 ## Work items
-11 / 46 (D1-D8, 01-03)
+12 / 46 (D1-D8, 01-04)
