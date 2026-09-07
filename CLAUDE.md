@@ -54,6 +54,14 @@ that item's code ("why this approach, what was the alternative, in which scenari
 bite?"). If Huseyin cannot re-explain it in his own words, the item is **not done**.
 "Looks good" is not a review.
 
+**Least code that works.** A work item teaches one idea; anything that is not that idea is a
+candidate for deletion, not for a better implementation. The plan names the new files and their
+count - a wrapper around something the framework already provides does not get written. Holes
+left open on purpose (retry, validation, a settings class, an interface with one implementation)
+are stated in one sentence in the walkthrough instead of being closed with code, and go to open
+debts in `docs/00-status.md` if they matter later. The bar is the definition of done and the
+three tests, not "no loose ends".
+
 **Be critical, not agreeable.** Push back on bad decisions.
 
 **Progress is measured in work items, not hours.** Never ask about time.
