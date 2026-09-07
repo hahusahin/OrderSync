@@ -84,7 +84,23 @@
   full twice. Verified end to end against a temporary `/dev/boom` endpoint (since removed):
   `500` + `application/problem+json`, and both events in Seq under the same trace id. Deliberately
   not written: bootstrap logger, `Result`->HTTP mapping (task 12), PII masking.
-- **Next: work item 05** — Swagger/Scalar + health checks.
+- **05 done (2026-09-07).** OpenAPI + Scalar and health checks. **No new files** - four edited.
+  The document is produced by the framework (`AddOpenApi()` / `MapOpenApi()`, OpenAPI 3.1 at
+  `/openapi/v1.json`); Swashbuckle is not in the .NET 10 template any more. The viewer is
+  **Scalar alone** (`/scalar/v1`) - a second UI over the same document would be rule 3. Both are
+  mapped only in Development, so a deployed instance publishes no description of itself.
+  Health is split by the consequence of the answer, not by the checks it runs: `/health/live`
+  deliberately runs **no** check (`Predicate = _ => false`) because its only sensible consequence
+  is a restart, and `/health/ready` runs everything tagged `ready` - today one SQL Server check,
+  registered inside `AddSharedPersistence` where the connection string already lives. Verified
+  by injecting the fault: with `sqlserver` stopped, `/health/live` stayed `200 Healthy` while
+  `/health/ready` returned `503 Unhealthy`, and readiness recovered on its own once the container
+  came back. Restore also surfaced a real advisory - `Microsoft.AspNetCore.OpenApi` pulls
+  `Microsoft.OpenApi` 2.0.0, which has a high-severity DoS (GHSA-v5pm-xwqc-g5wc); transitive
+  pinning in `Directory.Packages.props` raises it to the patched 2.7.5. Deliberately not written:
+  JWT button in Scalar (task 15), Redis/RabbitMQ/MinIO checks (each with its own task), a JSON
+  health response writer (task 29), silencing `/health/*` in the request log.
+- **Next: work item 06** - product and variant model.
 
 ## Open debts
 
@@ -105,4 +121,4 @@ memorise. He also said this stretch is costing him more effort than the eShop co
    project directly? — asked at work item 12.
 
 ## Work items
-12 / 46 (D1-D8, 01-04)
+13 / 46 (D1-D8, 01-05)

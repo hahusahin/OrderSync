@@ -22,6 +22,9 @@ public static class PersistenceExtensions
         services.AddScoped(_ => new DbConnectionAccessor(connectionString));
         services.AddScoped<IUnitOfWork, UnitOfWork>();
 
+        // Registered here rather than in the host: this is where the connection string already is.
+        services.AddHealthChecks().AddSqlServer(connectionString, name: "sql-server", tags: ["ready"]);
+
         return services;
     }
 

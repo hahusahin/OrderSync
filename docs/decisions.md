@@ -6,6 +6,16 @@ changes, the line is edited, not appended to.
 Scope: decisions that do **not** become domain rules - stack choices, working setup, what was
 left out. Anything that becomes a rule lives only in `01-domain.md`; do not restate it here.
 
+## 2026-09-07 - One API viewer (Scalar), and health split by consequence
+The OpenAPI document is the framework's own (`AddOpenApi()`); the viewer is Scalar and nothing
+else - Swagger UI over the same document would be two tools for one job (rule 3). Both are
+mapped in Development only. Health checks are split by what the answer should cause, not by what
+they test: `/health/live` runs no check at all (its consequence is a restart), `/health/ready`
+runs everything tagged `ready` (its consequence is being taken out of rotation). A database
+still starting must not restart the API. Redis, RabbitMQ and MinIO get a check each in the task
+that first uses them. Transitive package pinning is on, to lift `Microsoft.OpenApi` off the
+vulnerable 2.0.0 that `Microsoft.AspNetCore.OpenApi` asks for.
+
 ## 2026-09-04 - One database, a schema and a migration history per module
 Every module keeps its own `DbContext` in its own SQL Server schema (`inventory`, `ordering`,
 `integration`) with its own `__EFMigrationsHistory` in that schema, so modules migrate
