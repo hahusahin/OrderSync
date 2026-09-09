@@ -22,7 +22,7 @@ Progress is measured in work items, not hours.
 - [x] 05 Swagger/Scalar + health checks (Claude)
 
 ## Phase 1 — core domain: inventory and orders
-- [ ] 06 Product and variant model
+- [x] 06 Product and variant model
 - [ ] 07 Inventory model: on-hand / reserved / available **(Huseyin)**
 - [ ] 08 Stock movement ledger **(Huseyin)**
 - [ ] 09 Reservation rules — domain logic **(Huseyin)**

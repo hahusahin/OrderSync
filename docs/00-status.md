@@ -100,7 +100,22 @@
   pinning in `Directory.Packages.props` raises it to the patched 2.7.5. Deliberately not written:
   JWT button in Scalar (task 15), Redis/RabbitMQ/MinIO checks (each with its own task), a JSON
   health response writer (task 29), silencing `/health/*` in the request log.
-- **Next: work item 06** - product and variant model.
+- **06 done (2026-09-07).** Product and variant model. Four new files in `Inventory`
+  (`Domain/Product.cs`, `Domain/Variant.cs`, `Data/Configurations/CatalogConfiguration.cs`,
+  `Features/Products/ProductEndpoints.cs`) plus the `AddCatalog` migration; the module's `ping`
+  placeholder was deleted now that it has a real feature. `Product` is a grouping and carries no
+  quantity; `Product.Create` demands the first variant, so no "product without variants" code path
+  can appear. `Variant` holds the SKU as a uniquely indexed business code and is deactivated,
+  never deleted, so the index keeps refusing a reused code. Endpoints talk to the `DbContext`
+  directly (MediatR and validation arrive at task 12) and answer `409` on a known SKU - but the
+  guarantee is the index, not that check: eight simultaneous creates of one SKU returned one
+  `201`, six `409` and one `500` from `IX_Variants_Sku`, which is rule 40 in miniature.
+  Ids are `Guid.CreateVersion7()` values created in the domain and mapped `ValueGeneratedNever()`,
+  so EF writes a child of a loaded parent as an `INSERT` rather than reading its filled-in key as
+  proof the row already exists. Deliberately not written:
+  validation, `Result`->HTTP mapping (12), paging (task 36), price (stays on the channel, rule 26),
+  listing/channel mapping (Integration, task 18), critical stock level (07), images (33).
+- **Next: work item 07** - inventory model: on-hand / reserved / available **(Huseyin writes)**.
 
 ## Open debts
 
@@ -109,6 +124,10 @@ harder, not safer, to learn from - every hole closed with another file is attent
 the thing being taught. From 04 on: the fewest files that make the item work, holes named in prose
 instead of closed with code, and review questions about the mechanism rather than a rule to
 memorise. He also said this stretch is costing him more effort than the eShop course did.
+
+**Paging is deferred, not dropped (2026-09-07).** `GET /api/inventory/products` returns
+everything. A paging parameter today would be untestable dead code; it arrives with task 36, the
+screen that actually pages, and matters from task 32 (bulk upload) on.
 
 **Owed re-explanations** (asked once the code exists, out of that work item's own code):
 
@@ -121,4 +140,4 @@ memorise. He also said this stretch is costing him more effort than the eShop co
    project directly? — asked at work item 12.
 
 ## Work items
-13 / 46 (D1-D8, 01-05)
+14 / 46 (D1-D8, 01-06)

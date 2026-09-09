@@ -6,6 +6,14 @@ changes, the line is edited, not appended to.
 Scope: decisions that do **not** become domain rules - stack choices, working setup, what was
 left out. Anything that becomes a rule lives only in `01-domain.md`; do not restate it here.
 
+## 2026-09-07 - Entity ids come from the domain, never from the database
+Keys are `Guid.CreateVersion7()` values created in the constructor and mapped
+`ValueGeneratedNever()`. An aggregate is valid the moment it is constructed, which needs its
+children to know their parent's id before anything is saved. The mapping is not decoration: EF
+Core reads a key that already has a value as "this row exists", so a child added to a loaded
+parent is saved as an `UPDATE` of a row that was never inserted. Version 7 is time-ordered, so
+rows are appended to the clustered index instead of being inserted into the middle of it.
+
 ## 2026-09-07 - One API viewer (Scalar), and health split by consequence
 The OpenAPI document is the framework's own (`AddOpenApi()`); the viewer is Scalar and nothing
 else - Swagger UI over the same document would be two tools for one job (rule 3). Both are
